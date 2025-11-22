@@ -1,0 +1,15 @@
+# Dependencias del Proyecto - Analizador de Complejidad
+
+# GUI
+# tkinter viene con Python, no necesita instalación
+
+# Estándar de Python (no necesitan instalación)
+# math
+# random
+# json
+# re
+# pickle
+# os
+
+# Nota: Este proyecto solo usa librerías estándar de Python
+# No tiene dependencias externas

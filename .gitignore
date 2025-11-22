@@ -1,0 +1,30 @@
+# Entorno virtual
+.venv/
+venv/
+ENV/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Archivos de modelo (opcional, si quieres subir)
+# complexity_model.pkl
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Cache de pycache
+.pytest_cache/
