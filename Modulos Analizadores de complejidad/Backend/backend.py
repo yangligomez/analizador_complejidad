@@ -99,10 +99,15 @@ class CodeFeatureExtractor:
             hints['exponential'] += 1
         
         # Búsqueda binaria (logarítmico)
-        if re.search(r'left.*right|binarySearch|binary', code, re.IGNORECASE):
+        # Detectar patrones de búsqueda binaria: left/right, inicio/fin, low/high
+        if re.search(r'(left|inicio|low).*?(right|fin|high)|binarySearch|binary|busqueda.{0,10}binaria', code, re.IGNORECASE):
             hints['logarithmic'] += 2
-        if re.search(r'mid.*=.*Math\.floor.*\(\s*\(', code):
-            hints['logarithmic'] += 1
+        # Detectar Math.floor((inicio + fin) / 2) o variaciones similares
+        if re.search(r'(Math\.floor|Math\.ceil|>>)\s*\(\s*\(.*?(\+|-|/).*?\)\s*\)', code):
+            hints['logarithmic'] += 2
+        # Detectar mid = .... Math.floor
+        if re.search(r'(mid|middle)\s*=.*Math\.floor', code, re.IGNORECASE):
+            hints['logarithmic'] += 2
         
         # Ordenamiento y búsqueda lineal
         if re.search(r'sort|linearSearch', code, re.IGNORECASE):
@@ -375,7 +380,7 @@ class SimpleNeuralNetwork:
         print("¡Entrenamiento completado!")
         self.is_trained = True
     
-    def predict(self, features):
+    def predict(self, features, code=""):
         """Predice la complejidad basada en características"""
         if not isinstance(features, list):
             features = list(features)
@@ -407,6 +412,17 @@ class SimpleNeuralNetwork:
         if total_loops == 0 and recursion == 0 and nested_loops == 0:
             score = 0.1  # O(1)
             confidence = 0.95  # Muy confiado cuando NO hay bucles ni recursión
+        # REGLA 4 (prioridad ALTA): O(n log n) - Merge Sort, Quick Sort, Heap Sort
+        # Detectar PRIMERO que O(n²): recursión + operaciones de array/slice
+        # Permite hasta 2 niveles de anidación cuando hay recursión + array_ops
+        elif recursion > 0 and (array_ops >= 1 or string_methods >= 1) and nested_loops <= 2:
+            score = 0.65  # O(n log n)
+            confidence = 0.88
+        # REGLA 4b: O(n log n) - Heap Sort u otros con recursión pero sin slices
+        # Algoritmos que tienen 2 for loops + recursión = divide and conquer
+        elif recursion > 0 and for_loops >= 2 and nested_loops <= 1:
+            score = 0.65  # O(n log n)
+            confidence = 0.85
         # REGLA 1: Triple bucle anidado -> O(n³)
         elif for_loops >= 3 and nested_loops >= 3:
             score = 0.85  # O(n³)
@@ -415,18 +431,24 @@ class SimpleNeuralNetwork:
         elif nested_loops >= 2 and total_loops >= 2:
             score = 0.75  # O(n²)
             confidence = 0.92
-        # REGLA 4 (prioridad alta): Merge Sort pattern - recursión con slice/split + más líneas
-        elif recursion > 0 and for_loops == 0 and while_loops == 0 and (array_ops >= 1 or string_methods >= 1) and lines_count > 5:
-            score = 0.65  # O(n log n)
-            confidence = 0.90
         # REGLA 3: Recursión sin bucles + pocas líneas = O(2ⁿ) Fibonacci
         elif recursion > 0 and total_loops == 0 and nested_loops == 0 and func_count <= 1 and lines_count <= 5 and code_length < 150:
             score = 0.95  # O(2ⁿ)
             confidence = 0.88
-        # REGLA 5: Un while simple sin muchas líneas
-        elif while_loops >= 1 and for_loops == 0 and nested_loops <= 1 and var_count <= 5 and lines_count <= 12:
-            score = 0.3  # O(log n)
-            confidence = 0.85
+        # REGLA 5: Un while simple - probablemente búsqueda binaria o parecido
+        # Detectar patrones de búsqueda binaria: variables de rango + mid
+        elif while_loops >= 1 and for_loops == 0 and nested_loops <= 1:
+            # Detectar si es búsqueda binaria: tiene variables de rango (left/right, inicio/fin, low/high)
+            if re.search(r'(left|right|inicio|fin|low|high|start|end)', code, re.IGNORECASE) and re.search(r'(mid|middle|medio)', code, re.IGNORECASE):
+                score = 0.3  # O(log n)
+                confidence = 0.90
+            # Si es un while simple sin variables de rango, asumir O(log n) de todas formas si var_count es bajo
+            elif var_count <= 5 and lines_count <= 15:
+                score = 0.3  # O(log n)
+                confidence = 0.82
+            else:
+                score = 0.5  # O(n) más seguro para while loops más complejos
+                confidence = 0.75
         # REGLA 6: Un bucle for simple
         elif for_loops >= 1 and while_loops == 0 and nested_loops <= 1:
             score = 0.5  # O(n)
@@ -507,7 +529,7 @@ class NeuralNetworkComplexityAnalyzer:
             raise Exception("El modelo no ha sido entrenado.")
         
         features = self.feature_extractor.extract_features(code)
-        complexity_value, confidence = self.model.predict(list(features))
+        complexity_value, confidence = self.model.predict(list(features), code)
         complexity = self.complexity_mapper.value_to_complexity(complexity_value)
         
         return complexity, confidence
