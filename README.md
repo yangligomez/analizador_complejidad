@@ -161,27 +161,9 @@ Output (1 neurona, Sigmoid) → [0, 1]
 - **ESTRUCTURA_PROYECTO.md** - Diagrama completo de la arquitectura
 - **PRESENTACION.md** - Presentación formal del proyecto
 
-## 👨‍💻 Autor
+r
 
-Desarrollado como proyecto educativo de análisis de complejidad asintótica.
 
-## 📝 Licencia
 
-MIT License - Libre para usar y modificar
 
-## 🤝 Contribuciones
 
-Las contribuciones son bienvenidas. Por favor:
-1. Fork el proyecto
-2. Crea una rama (`git checkout -b feature/AmazingFeature`)
-3. Commit los cambios (`git commit -m 'Add AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📧 Contacto
-
-Para preguntas o sugerencias, abre un issue en GitHub.
-
----
-
-**⭐ Si te fue útil, no olvides darle una estrella!**
